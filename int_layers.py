@@ -47,8 +47,8 @@ def run_inference(model_path, json_file_path):
         json.dump(output_content, json_file)
 
     # Print shapes of the intermediate layer outputs
-    for layer_name, lay_wise_output in ort_outs_dict.items():
-        print(f"Shape of output '{layer_name}': {lay_wise_output.shape}")
+    # for layer_name, lay_wise_output in ort_outs_dict.items():
+    #     print(f"Shape of output '{layer_name}': {lay_wise_output.shape}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run ONNX inference and store intermediate layer outputs in a JSON file.')
