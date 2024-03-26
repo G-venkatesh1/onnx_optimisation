@@ -10,12 +10,15 @@ def get_node_stats(model_path):
 
     # Get the total number of nodes
     total_nodes = len(model.graph.node)
-    print("Total Number of Nodes from formula:", total_nodes)
+    node_stats = {"total_nodes": total_nodes}
 
     # List down all unique operation types
-    unique_op_types = set([node.op_type for node in model.graph.node])
-    print("Unique Operation Types:", unique_op_types)
-    
+    unique_op_types = list(set([node.op_type for node in model.graph.node]))
+    node_stats["unique_op_types"] = unique_op_types
+
+    # Print the node stats
+    print("Node Stats:", node_stats)
+
 def run_inference(model_path, json_file_path):
     # Load the ONNX model
     ort_session_1 = ort.InferenceSession(model_path)
@@ -45,7 +48,8 @@ def run_inference(model_path, json_file_path):
 
     # Get the output names for the modified model
     outputs = [x.name for x in ort_session.get_outputs()]
-    print("no of output nodes are:",len(outputs))
+    no_of_output_nodes = len(outputs)
+
     # Run inference
     ort_outs = ort_session.run(outputs, {input_name: a_INPUT})
 
@@ -58,9 +62,8 @@ def run_inference(model_path, json_file_path):
     with open(json_file_path, 'w') as json_file:
         json.dump(output_content, json_file)
 
-    # Print shapes of the intermediate layer outputs
-    # for layer_name, lay_wise_output in ort_outs_dict.items():
-    #     print(f"Shape of output '{layer_name}': {lay_wise_output.shape}")
+    # Print the number of output nodes
+    print("No. of Output Nodes:", no_of_output_nodes)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run ONNX inference and store intermediate layer outputs in a JSON file.')
@@ -68,6 +71,6 @@ if __name__ == "__main__":
     parser.add_argument('json_file_path', type=str, help='Path to the JSON file where the intermediate layer outputs will be stored')
     args = parser.parse_args()
 
+    # Run inference and get node stats
     run_inference(args.model_path, args.json_file_path)
     get_node_stats(args.model_path)
-
