@@ -45,7 +45,7 @@ def run_inference(model_path, json_file_path):
 
     # Get the output names for the modified model
     outputs = [x.name for x in ort_session.get_outputs()]
-    print("no of output nodes are:",outputs.shape)
+    print("no of output nodes are:",len(outputs))
     # Run inference
     ort_outs = ort_session.run(outputs, {input_name: a_INPUT})
 
