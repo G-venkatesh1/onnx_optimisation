@@ -28,7 +28,7 @@ def run_inference(model_path, json_file_path, npy_file_path):
     # Load the ONNX model with specified data type
     ort_session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'], 
                                         providers_options=[{'cpu_execution_provider': {'omp_num_threads': '1'}}], 
-                                        sess_options=rt.SessionOptions())
+                                        sess_options=ort.SessionOptions())
     input_info = ort_session.get_inputs()[0]
     input_shape = input_info.shape
 
