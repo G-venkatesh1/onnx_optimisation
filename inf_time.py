@@ -4,7 +4,7 @@ import pandas as pd
 import json
 
 # Load the ONNX model
-onx_model_path = "E:/Mcw/onnx_optimisation/t1.onnx"  # Replace "your_model.onnx" with the actual file path
+onx_model_path = "/kaggle/input/sample_given/onnx/t1/1/t1.onnx"  # Replace "your_model.onnx" with the actual file path
 oinf = OnnxInference(onx_model_path)
 
 # Sample input data
