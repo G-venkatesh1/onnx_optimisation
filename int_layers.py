@@ -4,42 +4,51 @@ import onnxruntime as ort
 import numpy as np
 import json
 
+def get_input_dtype(model):
+    """
+    Get the data type of the model's input tensor.
+    """
+    input_type = model.graph.input[0].type.tensor_type.elem_type
+    if input_type == onnx.TensorProto.FLOAT:
+        return np.float32
+    elif input_type == onnx.TensorProto.FLOAT16:
+        return np.float16
+    elif input_type == onnx.TensorProto.INT8:
+        return np.int8
+    else:
+        raise ValueError("Unsupported input data type")
+
 def run_inference(model_path, json_file_path, npy_file_path):
     # Load the ONNX model
-    ort_session_1 = ort.InferenceSession(model_path)
-
-    # Get the original output names
-    org_outputs = [x.name for x in ort_session_1.get_outputs()]
-
-    # Load the model
     model = onnx.load(model_path)
 
-    # Add all layers as output
-    for node in model.graph.node:
-        for output in node.output:
-            if output not in org_outputs:
-                model.graph.output.extend([onnx.ValueInfoProto(name=output)])
+    # Get the data type of the model's input tensor
+    input_dtype = get_input_dtype(model)
 
-    # Serialize the modified model and create a new session
-    ort_session = ort.InferenceSession(model.SerializeToString())
-
-    # Get input information
+    # Load the ONNX model with specified data type
+    ort_session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'], 
+                                        providers_options=[{'cpu_execution_provider': {'omp_num_threads': '1'}}], 
+                                        sess_options=rt.SessionOptions())
     input_info = ort_session.get_inputs()[0]
-    input_name = input_info.name
     input_shape = input_info.shape
 
-    # Generate random input data
-    a_INPUT = np.random.uniform(low=0.0, high=0.1, size=input_shape).astype(np.float32)
+    # Generate random input data according to the data type
+    if input_dtype == np.float32:
+        a_INPUT = np.random.uniform(low=0.0, high=0.1, size=input_shape).astype(np.float32)
+    elif input_dtype == np.float16:
+        a_INPUT = np.random.uniform(low=0.0, high=0.1, size=input_shape).astype(np.float16)
+    elif input_dtype == np.int8:
+        a_INPUT = np.random.randint(low=-128, high=127, size=input_shape).astype(np.int8)
 
     # Get the output names for the modified model
     outputs = [x.name for x in ort_session.get_outputs()]
     output_nodes_traversal = len(outputs)
     total_nodes_from_formula = len(model.graph.node)
+    unique_op_types = list(set([node.op_type for node in model.graph.node]))
     all_node_names = [node.name for node in model.graph.node]
-    unique_node_names = list(set(all_node_names))
 
     # Run inference
-    ort_outs = ort_session.run(outputs, {input_name: a_INPUT})
+    ort_outs = ort_session.run(outputs, {input_info.name: a_INPUT})
 
     # Map outputs to their names
     ort_outs_dict = dict(zip(outputs, ort_outs))
@@ -47,12 +56,12 @@ def run_inference(model_path, json_file_path, npy_file_path):
     # Create a dictionary to store layer names and their contents
     output_content = {layer_name: ort_outs_dict[layer_name].tolist() for layer_name in ort_outs_dict}
 
-    # Save total_nodes_from_formula, output_nodes_traversal, all_node_names, and unique_node_names to JSON
+    # Save total_nodes_from_formula, output_nodes_traversal, unique_op_types, and all_node_names to JSON
     json_data = {
         "total_nodes_from_formula": total_nodes_from_formula,
         "output_nodes_traversal": output_nodes_traversal,
-        "all_node_names": all_node_names,
-        "unique_node_names": unique_node_names
+        "unique_op_types": unique_op_types,
+        "all_node_names": all_node_names
     }
     with open(json_file_path, 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
