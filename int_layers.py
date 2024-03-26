@@ -18,6 +18,25 @@ def get_input_dtype(model):
     else:
         raise ValueError("Unsupported input data type")
 
+def add_all_nodes_as_output(model, ort_session):
+    """
+    Add all nodes as output nodes to the existing session.
+    """
+    # Get original output names
+    org_outputs = [x.name for x in ort_session.get_outputs()]
+
+    # Add all nodes as output nodes
+    for node in model.graph.node:
+        for output in node.output:
+            if output not in org_outputs:
+                model.graph.output.extend([onnx.ValueInfoProto(name=output)])
+
+    # Serialize the modified model and create a new session
+    modified_model = onnx.load_from_string(onnx.helper.serialize_model(model))
+    modified_session = ort.InferenceSession(modified_model.SerializeToString(), providers=['CPUExecutionProvider'])
+
+    return modified_session
+
 def run_inference(model_path, json_file_path, npy_file_path):
     # Load the ONNX model
     model = onnx.load(model_path)
@@ -40,15 +59,18 @@ def run_inference(model_path, json_file_path, npy_file_path):
     elif input_dtype == np.int8:
         a_INPUT = np.random.randint(low=-128, high=127, size=input_shape).astype(np.int8)
 
+    # Add all nodes as output nodes to the existing session
+    modified_session = add_all_nodes_as_output(model, ort_session)
+
     # Get the output names for the modified model
-    outputs = [x.name for x in ort_session.get_outputs()]
+    outputs = [x.name for x in modified_session.get_outputs()]
     output_nodes_traversal = len(outputs)
     total_nodes_from_formula = len(model.graph.node)
     unique_op_types = list(set([node.op_type for node in model.graph.node]))
     all_node_names = [node.name for node in model.graph.node]
 
     # Run inference
-    ort_outs = ort_session.run(outputs, {input_info.name: a_INPUT})
+    ort_outs = modified_session.run(outputs, {input_info.name: a_INPUT})
 
     # Map outputs to their names
     ort_outs_dict = dict(zip(outputs, ort_outs))
