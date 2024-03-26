@@ -62,6 +62,6 @@ if __name__ == "__main__":
     parser.add_argument('json_file_path', type=str, help='Path to the JSON file where the result will be stored')
     args = parser.parse_args()
 
-    input_data = np.array(args.input_data, dtype=np.float32).reshape(1, -1)  # Reshape input data to (1, N)
+    input_data = np.array(args.input_data, dtype=np.float32)  # Reshape input data to (1, N)
     main(args.model_path, input_data, args.input_name, args.json_file_path)
 
