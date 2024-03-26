@@ -4,6 +4,18 @@ import onnxruntime as ort
 import numpy as np
 import json
 
+def get_node_stats(model_path):
+    # Load the ONNX model
+    model = onnx.load(model_path)
+
+    # Get the total number of nodes
+    total_nodes = len(model.graph.node)
+    print("Total Number of Nodes from formula:", total_nodes)
+
+    # List down all unique operation types
+    unique_op_types = set([node.op_type for node in model.graph.node])
+    print("Unique Operation Types:", unique_op_types)
+    
 def run_inference(model_path, json_file_path):
     # Load the ONNX model
     ort_session_1 = ort.InferenceSession(model_path)
@@ -33,7 +45,7 @@ def run_inference(model_path, json_file_path):
 
     # Get the output names for the modified model
     outputs = [x.name for x in ort_session.get_outputs()]
-
+    print("no of output nodes are:",outputs.shape)
     # Run inference
     ort_outs = ort_session.run(outputs, {input_name: a_INPUT})
 
@@ -57,4 +69,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run_inference(args.model_path, args.json_file_path)
+    get_node_stats(args.model_path)
 
