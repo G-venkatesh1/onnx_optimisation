@@ -18,12 +18,12 @@ def get_input_dtype(model):
     else:
         raise ValueError("Unsupported input data type")
 
-def add_all_nodes_as_output(model, session):
-    # Add all layers as output
-    for node in model.graph.node:
-        for output in node.output:
-            session.add_providers(['CPUExecutionProvider'], {node.name: output})
-    return session
+# def add_all_nodes_as_output(model, session):
+#     # Add all layers as output
+#     for node in model.graph.node:
+#         for output in node.output:
+#             session.add_providers(['CPUExecutionProvider'], {node.name: output})
+#     return session
 
 def run_inference(model_path, json_file_path, npy_file_path):
     # Load the ONNX model
@@ -36,6 +36,9 @@ def run_inference(model_path, json_file_path, npy_file_path):
     ort_session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'], 
                                         providers_options=[{'cpu_execution_provider': {'omp_num_threads': '1'}}], 
                                         sess_options=ort.SessionOptions())
+    for node in model.graph.node:
+        for output in node.output:
+            ort_session.add_providers(['CPUExecutionProvider'], {node.name: output})
     input_info = ort_session.get_inputs()[0]
     input_shape = input_info.shape
 
