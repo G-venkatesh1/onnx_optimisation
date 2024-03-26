@@ -50,12 +50,12 @@ def run_inference(model_path, json_file_path):
     no_of_output_nodes = len(outputs)
 
     # Run inference
-    ort_outs = ort_session.run(outputs, {input_name: a_INPUT})
+    # ort_outs = ort_session.run(outputs, {input_name: a_INPUT})
 
     # Map outputs to their names
-    ort_outs_dict = dict(zip(outputs, ort_outs))
-    # Create a dictionary to store layer names and their contents
-    output_content = {layer_name: ort_outs_dict[layer_name].tolist() for layer_name in ort_outs_dict}
+    # ort_outs_dict = dict(zip(outputs, ort_outs))
+    # # Create a dictionary to store layer names and their contents
+    # output_content = {layer_name: ort_outs_dict[layer_name].tolist() for layer_name in ort_outs_dict}
 
     # Get node stats
     node_stats = get_node_stats(model_path)
@@ -63,8 +63,8 @@ def run_inference(model_path, json_file_path):
     # Create a dictionary to store all information
     all_info = {
         "no_of_output_nodes": no_of_output_nodes,
-        "node_stats": node_stats,
-        "layer_outputs": output_content
+        "node_stats": node_stats
+        # "layer_outputs": output_content
     }
 
     # Save content to a JSON file
