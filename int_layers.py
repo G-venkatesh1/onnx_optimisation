@@ -4,21 +4,7 @@ import onnxruntime as ort
 import numpy as np
 import json
 
-def get_node_stats(model_path):
-    # Load the ONNX model
-    model = onnx.load(model_path)
-
-    # Get the total number of nodes
-    total_nodes = len(model.graph.node)
-    node_stats = {"total_nodes": total_nodes}
-
-    # List down all unique operation types
-    unique_op_types = list(set([node.op_type for node in model.graph.node]))
-    node_stats["unique_op_types"] = unique_op_types
-
-    return node_stats
-
-def run_inference(model_path, json_file_path):
+def run_inference(model_path, json_file_path, npy_file_path):
     # Load the ONNX model
     ort_session_1 = ort.InferenceSession(model_path)
 
@@ -47,34 +33,38 @@ def run_inference(model_path, json_file_path):
 
     # Get the output names for the modified model
     outputs = [x.name for x in ort_session.get_outputs()]
-    no_of_output_nodes = len(outputs)
+    output_nodes_traversal = len(outputs)
+    total_nodes_from_formula = len(model.graph.node)
+    all_node_names = [node.name for node in model.graph.node]
+    unique_node_names = list(set(all_node_names))
 
     # Run inference
-    # ort_outs = ort_session.run(outputs, {input_name: a_INPUT})
+    ort_outs = ort_session.run(outputs, {input_name: a_INPUT})
 
     # Map outputs to their names
-    # ort_outs_dict = dict(zip(outputs, ort_outs))
-    # # Create a dictionary to store layer names and their contents
-    # output_content = {layer_name: ort_outs_dict[layer_name].tolist() for layer_name in ort_outs_dict}
+    ort_outs_dict = dict(zip(outputs, ort_outs))
 
-    # Get node stats
-    node_stats = get_node_stats(model_path)
+    # Create a dictionary to store layer names and their contents
+    output_content = {layer_name: ort_outs_dict[layer_name].tolist() for layer_name in ort_outs_dict}
 
-    # Create a dictionary to store all information
-    all_info = {
-        "no_of_output_nodes": no_of_output_nodes,
-        "node_stats": node_stats
-        # "layer_outputs": output_content
+    # Save total_nodes_from_formula, output_nodes_traversal, all_node_names, and unique_node_names to JSON
+    json_data = {
+        "total_nodes_from_formula": total_nodes_from_formula,
+        "output_nodes_traversal": output_nodes_traversal,
+        "all_node_names": all_node_names,
+        "unique_node_names": unique_node_names
     }
-
-    # Save content to a JSON file
     with open(json_file_path, 'w') as json_file:
-        json.dump(all_info, json_file, indent=4)
+        json.dump(json_data, json_file, indent=4)
+
+    # Save intermediate layer outputs to .npy
+    np.save(npy_file_path, output_content)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Run ONNX inference and store intermediate layer outputs in a JSON file.')
+    parser = argparse.ArgumentParser(description='Run ONNX inference and store intermediate layer outputs and names in a JSON/NPY file.')
     parser.add_argument('model_path', type=str, help='Path to the ONNX model file')
-    parser.add_argument('json_file_path', type=str, help='Path to the JSON file where the intermediate layer outputs will be stored')
+    parser.add_argument('json_file_path', type=str, help='Path to the JSON file where the intermediate layer names will be stored')
+    parser.add_argument('npy_file_path', type=str, help='Path to the npy file where the intermediate layer outputs will be stored')
     args = parser.parse_args()
 
-    run_inference(args.model_path, args.json_file_path)
+    run_inference(args.model_path, args.json_file_path, args.npy_file_path)
